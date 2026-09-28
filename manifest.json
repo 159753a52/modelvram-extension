@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "ModelVRAM: VRAM on Hugging Face",
+  "short_name": "ModelVRAM",
+  "version": "0.1.0",
+  "description": "See how much GPU memory a Hugging Face model needs at Q4, Q8 and FP16, and which GPU it fits, on its model page.",
+  "homepage_url": "https://modelvram.com/llm-vram-calculator/",
+  "icons": { "16": "icons/16.png", "48": "icons/48.png", "96": "icons/96.png", "128": "icons/128.png" },
+  "content_scripts": [
+    {
+      "matches": ["https://huggingface.co/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "modelvram@modelvram.com",
+      "strict_min_version": "140.0",
+      "data_collection_permissions": { "required": ["none"] }
+    },
+    "gecko_android": { "strict_min_version": "142.0" }
+  }
+}

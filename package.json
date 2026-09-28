@@ -1,0 +1,18 @@
+{
+  "name": "modelvram-extension",
+  "version": "0.1.0",
+  "description": "Shows how much GPU memory a Hugging Face model needs, right on its model page.",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "test": "node --test \"test/*.test.ts\"",
+    "build": "node scripts/build.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}
