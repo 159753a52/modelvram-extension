@@ -1,6 +1,6 @@
 {
   "name": "modelvram-extension",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Shows how much GPU memory a Hugging Face model needs, right on its model page.",
   "type": "module",
   "private": true,

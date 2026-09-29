@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { calculatorLink, fitLabel, modelIdFromPath, rowsFor } from '../src/estimate.ts';
-import { GIB, type ModelSpec } from '../src/lib/vram.ts';
+import { GIB, kvCacheBytes, slidingCells, type ModelSpec } from '../src/lib/vram.ts';
+import { specFromHub } from '../src/lib/hf.ts';
 
 test('model ids come only from model pages', () => {
   assert.equal(modelIdFromPath('/Qwen/Qwen3.8-27B'), 'Qwen/Qwen3.8-27B');
@@ -34,4 +35,24 @@ test('the site link carries the model and a source tag', () => {
   assert.equal(url.origin + url.pathname, 'https://modelvram.com/llm-vram-calculator/');
   assert.equal(url.searchParams.get('model'), 'Qwen/Qwen3.8-27B');
   assert.equal(url.searchParams.get('utm_source'), 'hf-extension');
+});
+test('KV cache as llama.cpp allocates it: Gemma 4 global V kept, sliding windows at window + ubatch', () => {
+  const gemma = specFromHub(
+    'google/gemma-4-31B-it',
+    {
+      text_config: {
+        num_hidden_layers: 60, num_attention_heads: 32, num_key_value_heads: 16, head_dim: 256,
+        num_global_key_value_heads: 4, global_head_dim: 512, attention_k_eq_v: true, sliding_window: 1024,
+        layer_types: [...Array(50).fill('sliding_attention'), ...Array(10).fill('full_attention')],
+      },
+    },
+    { safetensors: { total: 31_273_088_876 } },
+  );
+  assert.deepEqual([gemma.vHeadDim, gemma.kEqV], [undefined, true]);
+  // 10 global layers × 4 × (512 + 512) per token; 50 sliding layers × 1,536 cells × 16 × (256 + 256).
+  assert.equal(kvCacheBytes(gemma, 262_144, 1, 16), (10 * 262_144 * 4_096 + 50 * 1_536 * 8_192) * 2);
+  assert.deepEqual([slidingCells(128, 32_768), slidingCells(1024, 4096), slidingCells(1024, 62_080, 4)], [768, 1536, 4608]);
+  // llama.cpp#15789: gpt-oss-20b, f16, 32,768 cells: 768.00 MiB + SWA 18.00 MiB.
+  const gptOss: ModelSpec = { id: 'openai/gpt-oss-20b', name: 'gpt-oss-20b', params: 20_914_757_184, layers: 24, kvHeads: 8, headDim: 64, slidingLayers: 12, slidingWindow: 128 };
+  assert.equal(kvCacheBytes(gptOss, 32_768, 1, 16), (768 + 18) * 1024 ** 2);
 });
